@@ -1,0 +1,103 @@
+[package]
+name = "whoa-text"
+version = "0.1.0"
+edition = "2024"
+build = "src/build.rs"
+
+# i want release to run as fast and efficient as possible because i'm greedy
+# have not done any profiling to compare just yet, but in general these help
+[profile.release]
+strip = true
+codegen-units = 1
+lto = "fat"
+
+[dependencies]
+anyhow = "1.0"
+winit = { version = "0.30", features = [ "android-native-activity" ] }
+env_logger = "0.10"
+log = "0.4"
+wgpu = "28.0"
+pollster = "0.3"
+bytemuck = { version = "1.24", features = [ "derive" ] }
+cgmath = "0.18"
+tobj = { version = "3.2", default-features = false, features = ["async"] }
+
+[dependencies.image]
+version = "0.24"
+default-features = false
+features = ["png", "jpeg"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+console_log = "1.0"
+wgpu = { version = "28.0", features = ["webgl"]}
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.30"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+    "Location",
+]}
+reqwest = { version = "0.11" }
+
+[build-dependencies]
+anyhow = "1.0"
+fs_extra = "1.2"
+glob = "0.3"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-O4', "--enable-mutable-globals", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
+
+[lints.rust]
+ambiguous_negative_literals = "warn"
+missing_debug_implementations = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+trivial_numeric_casts = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"
+
+[lints.clippy]
+cargo = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+# nursery = { level = "warn", priority = -1 }  # optional, might cause more false positives
+
+# These lints are from the `restriction` lint group and prevent specific
+# constructs being used in source code in order to drive up consistency,
+# quality, and brevity
+allow_attributes_without_reason = "warn"
+as_pointer_underscore = "warn"
+assertions_on_result_states = "warn"
+clone_on_ref_ptr = "warn"
+deref_by_slicing = "warn"
+disallowed_script_idents = "warn"
+empty_drop = "warn"
+empty_enum_variants_with_brackets = "warn"
+empty_structs_with_brackets = "warn"
+fn_to_numeric_cast_any = "warn"
+if_then_some_else_none = "warn"
+map_err_ignore = "warn"
+redundant_type_annotations = "warn"
+renamed_function_params = "warn"
+semicolon_outside_block = "warn"
+string_to_string = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unneeded_field_pattern = "warn"
+unused_result_ok = "warn"
+
+# May cause issues with structured logging otherwise.
+literal_string_with_formatting_args = "allow"
+
+# Define custom opt outs here
+# ...
