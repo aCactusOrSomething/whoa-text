@@ -121,31 +121,3 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     return vec4<f32>(result, object_color.a);
 }
-
-@fragment
-fn fs_gooch(in: VertexOutput) -> @location(0) vec4<f32> {
-    let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
-    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
-
-
-    let light_dir = normalize(in.tangent_light_position - in.tangent_position);
-    let view_dir = normalize(in.tangent_view_position - in.tangent_position);
-
-    let cool = vec3<f32>(0.0, 0.0, 0.55) + 0.25 * object_color.xyz;
-    let warm = vec3<f32>(0.3, 0.3, 0.00) + 0.25 * object_color.xyz;
-    
-    let highlight = vec3<f32>(1.0, 1.0, 1.0);
-    let t = (max(dot(tangent_normal, light_dir), 0.0) + 1) / 2; 
-    let lerp = mix(cool, warm, t);
-    let r = reflect(light_dir, tangent_normal);
-    let s = saturate(100 * max(dot(r, view_dir), 0.0) - 97);
-    let result = s * highlight + (1 - s) * lerp;
-
-    return vec4<f32>(result, object_color.a);
-}
-
-@fragment
-fn fs_rainbow(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4(in.tex_coords.xyx, 1.0);
-}
