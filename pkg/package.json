@@ -1,0 +1,15 @@
+{
+  "name": "whoa-text",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "whoa_text_bg.wasm",
+    "whoa_text.js",
+    "whoa_text.d.ts"
+  ],
+  "main": "whoa_text.js",
+  "types": "whoa_text.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
