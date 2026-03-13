@@ -16,7 +16,7 @@ use model::Vertex;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::model::{Material, Model};
+use crate::model::Model;
 
 mod model;
 mod resources;
@@ -94,36 +94,6 @@ impl CameraController {
             is_backward_pressed: false,
             is_left_pressed: false,
             is_right_pressed: false,
-        }
-    }
-
-    fn handle_key(&mut self, key: KeyCode, is_pressed: bool) -> bool {
-        match key {
-            KeyCode::Space => {
-                self.is_up_pressed = is_pressed;
-                true
-            }
-            KeyCode::ShiftLeft => {
-                self.is_down_pressed = is_pressed;
-                true
-            }
-            KeyCode::KeyW | KeyCode::ArrowUp => {
-                self.is_forward_pressed = is_pressed;
-                true
-            }
-            KeyCode::KeyA | KeyCode::ArrowLeft => {
-                self.is_left_pressed = is_pressed;
-                true
-            }
-            KeyCode::KeyS | KeyCode::ArrowDown => {
-                self.is_backward_pressed = is_pressed;
-                true
-            }
-            KeyCode::KeyD | KeyCode::ArrowRight => {
-                self.is_right_pressed = is_pressed;
-                true
-            }
-            _ => false,
         }
     }
 
@@ -313,7 +283,6 @@ pub struct State {
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
     render_pipelines: Vec<wgpu::RenderPipeline>,
-    light_render_pipeline: wgpu::RenderPipeline,
     light_uniform: LightUniform,
     light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
@@ -323,13 +292,10 @@ pub struct State {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
     obj_models: Vec<Model>,
-    instances: Vec<Instance>,
     #[allow(dead_code)]
     instance_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
     window: Arc<Window>,
-    #[allow(unused)]
-    debug_material: Material,
 }
 
 impl State {
@@ -434,8 +400,6 @@ impl State {
                 ],
                 label: Some("texture_bind_group_layout"),
             });
-        
-        
 
         let light_uniform = LightUniform {
             position: [2.0, 2.0, 2.0],
@@ -567,7 +531,7 @@ impl State {
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
-        
+
         let shaders = vec![
             wgpu::ShaderModuleDescriptor {
                 label: Some("Blinn-Phong Shader"),
@@ -592,15 +556,15 @@ impl State {
         ];
 
         let render_pipeline_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[
-                        &texture_bind_group_layout,
-                        &camera_bind_group_layout,
-                        &light_bind_group_layout,
-                    ],
-                    immediate_size: 0,
-                });
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_bind_group_layout,
+                    &light_bind_group_layout,
+                ],
+                immediate_size: 0,
+            });
 
         let render_pipelines = vec![
             create_render_pipeline(
@@ -645,57 +609,6 @@ impl State {
             ),
         ];
 
-        let light_render_pipeline = {
-            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Light Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &light_bind_group_layout],
-                immediate_size: 0,
-            });
-            let shader = wgpu::ShaderModuleDescriptor {
-                label: Some("Light Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/light.wgsl").into()),
-            };
-
-            create_render_pipeline(
-                &device,
-                &layout,
-                config.format,
-                Some(texture::Texture::DEPTH_FORMAT),
-                &[model::ModelVertex::desc()],
-                shader,
-            )
-        };
-
-        let debug_material = {
-            let diffuse_bytes = include_bytes!("../res/cobble-diffuse.png");
-            let normal_bytes = include_bytes!("../res/cobble-normal.png");
-
-            let diffuse_texture = texture::Texture::from_bytes(
-                &device,
-                &queue,
-                diffuse_bytes,
-                "res/alt-diffuse.png",
-                false,
-            )
-            .unwrap();
-            let normal_texture = texture::Texture::from_bytes(
-                &device,
-                &queue,
-                normal_bytes,
-                "res/alt-normal.png",
-                true,
-            )
-            .unwrap();
-
-            model::Material::new(
-                &device,
-                "alt-material",
-                diffuse_texture,
-                normal_texture,
-                &texture_bind_group_layout,
-            )
-        };
-
         Ok(Self {
             surface,
             device,
@@ -703,7 +616,6 @@ impl State {
             config,
             is_surface_configured: false,
             render_pipelines,
-            light_render_pipeline,
             light_buffer,
             light_uniform,
             light_bind_group,
@@ -713,11 +625,9 @@ impl State {
             camera_bind_group,
             camera_uniform,
             obj_models,
-            instances,
             instance_buffer,
             depth_texture,
             window,
-            debug_material,
         })
     }
 
@@ -741,8 +651,6 @@ impl State {
     fn handle_key(&mut self, event_loop: &ActiveEventLoop, key: KeyCode, pressed: bool) {
         if key == KeyCode::Escape && pressed {
             event_loop.exit();
-        } else {
-            self.camera_controller.handle_key(key, pressed);
         }
     }
 
@@ -752,11 +660,7 @@ impl State {
             (y as f32 / self.config.height as f32),
         );
         // update the light
-        self.light_uniform.position = [
-            5.0 * (rel_pos.0 - 0.5),
-            0.75,
-            5.0 * (rel_pos.1 - 0.5),
-        ]
+        self.light_uniform.position = [5.0 * (rel_pos.0 - 0.5), 0.75, 5.0 * (rel_pos.1 - 0.5)]
     }
 
     fn update(&mut self) {
@@ -803,8 +707,8 @@ impl State {
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            g: 0.1,
+                            b: 0.1,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
