@@ -85,7 +85,7 @@ fn vs_main(
     return out;
 }
 
-// fragment shaders
+// fragment shader
 @group(0) @binding(0)
 var t_diffuse: texture_2d<f32>;
 @group(0) @binding(1)
@@ -114,7 +114,50 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular_strength = pow(max(dot(tangent_normal, half_dir), 0.0), 32.0);
     let specular_color = specular_strength * light.color;
 
-    let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
+    // apply the pips!
+    let diffuse = light.color * (1 - 
+        get_specular_pips(
+            1 - clamp(
+                dot(half_dir, object_normal.xyz),
+                0.0, 100000.0
+            ),
+            in.clip_position
+    ));
+    let specular = light.color * get_specular_pips(
+        clamp(
+                dot(half_dir, object_normal.xyz),
+                0.0, 100000.0
+            ),
+            in.clip_position
+        );
+
+    let result = (diffuse + ambient_color) * object_color.xyz;
 
     return vec4<f32>(result, object_color.a);
+}
+
+const PIP_SEPARATION = 10;
+
+fn get_specular_pips(spec_mult: f32, pos: vec4<f32>) -> vec3<f32> {
+    // find the distance to the nearest pip
+    // compare that distance to spec_mult
+    let pip: vec2<f32> = vec2(
+	    2 * (abs(pos.x % PIP_SEPARATION / PIP_SEPARATION) - 0.5),
+	    2 * (abs(pos.y % PIP_SEPARATION / PIP_SEPARATION) - 0.5),
+    );
+
+	let pip_distance: f32 = 
+        sqrt(pow(pip.x, 2) + pow(pip.y, 2)) / sqrt(2.0);
+
+	let spec_magnitude: f32 = sqrt(
+        pow(spec_mult, 2) + 
+        pow(spec_mult, 2) + 
+        pow(spec_mult, 2)
+    ) / sqrt(3.0);
+
+	if(pip_distance < spec_magnitude) {
+		return vec3(1.0);
+	}
+
+    return vec3(spec_mult);
 }

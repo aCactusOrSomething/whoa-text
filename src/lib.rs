@@ -585,6 +585,10 @@ impl State {
                 label: Some("Gouraud Shader"),
                 source: wgpu::ShaderSource::Wgsl(include_str!("shaders/gouraud.wgsl").into()),
             },
+            wgpu::ShaderModuleDescriptor {
+                label: Some("Halftone Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/halftone.wgsl").into()),
+            },
         ];
 
         let render_pipeline_layout =
@@ -630,6 +634,14 @@ impl State {
                 Some(texture::Texture::DEPTH_FORMAT),
                 &[model::ModelVertex::desc(), InstanceRaw::desc()],
                 shaders[3].clone(),
+            ),
+            create_render_pipeline(
+                &device,
+                &render_pipeline_layout,
+                config.format,
+                Some(texture::Texture::DEPTH_FORMAT),
+                &[model::ModelVertex::desc(), InstanceRaw::desc()],
+                shaders[4].clone(),
             ),
         ];
 
@@ -815,7 +827,7 @@ impl State {
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
             // W
-            render_pass.set_pipeline(&self.render_pipelines[0]);
+            render_pass.set_pipeline(&self.render_pipelines[4]);
             render_pass.draw_model_instanced(
                 &self.obj_models[0],
                 0..1,
