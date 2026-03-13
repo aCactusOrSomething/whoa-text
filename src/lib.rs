@@ -648,12 +648,6 @@ impl State {
         }
     }
 
-    fn handle_key(&mut self, event_loop: &ActiveEventLoop, key: KeyCode, pressed: bool) {
-        if key == KeyCode::Escape && pressed {
-            event_loop.exit();
-        }
-    }
-
     fn handle_mouse_moved(&mut self, x: f64, y: f64) {
         let rel_pos = (
             (x as f32 / self.config.width as f32),
@@ -889,15 +883,6 @@ impl ApplicationHandler<State> for App {
                 (MouseButton::Left, false) => {}
                 _ => {}
             },
-            WindowEvent::KeyboardInput {
-                event:
-                    KeyEvent {
-                        physical_key: PhysicalKey::Code(code),
-                        state: key_state,
-                        ..
-                    },
-                ..
-            } => state.handle_key(event_loop, code, key_state.is_pressed()),
             WindowEvent::CursorMoved { position, .. } => {
                 state.handle_mouse_moved(position.x, position.y);
             }

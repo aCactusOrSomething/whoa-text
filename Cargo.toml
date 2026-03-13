@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2024"
 build = "src/build.rs"
 
-# i want release to run as fast and efficient as possible because i'm greedy
-# have not done any profiling to compare just yet, but in general these help
+# Delete this section if you want to compile for release quicker.
 [profile.release]
 strip = true
 codegen-units = 1
