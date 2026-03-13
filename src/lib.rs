@@ -400,7 +400,7 @@ impl State {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -410,14 +410,14 @@ impl State {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                     // normal map
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
@@ -427,13 +427,15 @@ impl State {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                 ],
                 label: Some("texture_bind_group_layout"),
             });
+        
+        
 
         let light_uniform = LightUniform {
             position: [2.0, 2.0, 2.0],
@@ -474,8 +476,8 @@ impl State {
         });
 
         let camera = Camera {
-            eye: (0.0, 5.0, 0.1).into(),
-            target: (0.0, 0.0, 0.0).into(),
+            eye: (0.0, 3.0, 1.0).into(),
+            target: (0.0, 1.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
             aspect: config.width as f32 / config.height as f32,
             fovy: 45.0,
@@ -579,6 +581,10 @@ impl State {
                 label: Some("Rainbow Shader"),
                 source: wgpu::ShaderSource::Wgsl(include_str!("shaders/rainbow.wgsl").into()),
             },
+            wgpu::ShaderModuleDescriptor {
+                label: Some("Gouraud Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/gouraud.wgsl").into()),
+            },
         ];
 
         let render_pipeline_layout =
@@ -616,6 +622,14 @@ impl State {
                 Some(texture::Texture::DEPTH_FORMAT),
                 &[model::ModelVertex::desc(), InstanceRaw::desc()],
                 shaders[2].clone(),
+            ),
+            create_render_pipeline(
+                &device,
+                &render_pipeline_layout,
+                config.format,
+                Some(texture::Texture::DEPTH_FORMAT),
+                &[model::ModelVertex::desc(), InstanceRaw::desc()],
+                shaders[3].clone(),
             ),
         ];
 
@@ -800,6 +814,7 @@ impl State {
 
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
+            // W
             render_pass.set_pipeline(&self.render_pipelines[0]);
             render_pass.draw_model_instanced(
                 &self.obj_models[0],
@@ -807,6 +822,7 @@ impl State {
                 &self.camera_bind_group,
                 &self.light_bind_group,
             );
+            // H
             render_pass.set_pipeline(&self.render_pipelines[1]);
             render_pass.draw_model_instanced(
                 &self.obj_models[1],
@@ -814,21 +830,24 @@ impl State {
                 &self.camera_bind_group,
                 &self.light_bind_group,
             );
-            render_pass.set_pipeline(&self.render_pipelines[2]);
+            // O
+            render_pass.set_pipeline(&self.render_pipelines[0]);
             render_pass.draw_model_instanced(
                 &self.obj_models[2],
                 2..3,
                 &self.camera_bind_group,
                 &self.light_bind_group,
             );
-            render_pass.set_pipeline(&self.render_pipelines[1]);
+            // A
+            render_pass.set_pipeline(&self.render_pipelines[3]);
             render_pass.draw_model_instanced(
                 &self.obj_models[3],
                 3..4,
                 &self.camera_bind_group,
                 &self.light_bind_group,
             );
-            render_pass.set_pipeline(&self.render_pipelines[0]);
+            // !
+            render_pass.set_pipeline(&self.render_pipelines[2]);
             render_pass.draw_model_instanced(
                 &self.obj_models[4],
                 4..5,
